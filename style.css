@@ -19,3 +19,12 @@ form input, form label {
 div.plot {
     margin: 10px 0;
 }
+
+#form-tz input[type="text"] {
+    width: 3em;
+}
+
+form label {
+    width: 15em;
+    display: inline-block;
+}
