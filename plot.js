@@ -70,15 +70,29 @@ function draw_max_altitude(latitude) {
     draw_equation(equation, '#max-altitude', YEAR_RANGE, ANGLE_RANGE, {x: 'day', y: 'angle', title: 'maximal altitude'});
 }
 
-function draw_total_daylight(latitude) {
+function sunrise_eqn(latitude) {
     // https://en.wikipedia.org/wiki/Position_of_the_Sun
     var declination = -tilt + " * cos(2*pi*(x+10)/365)";
     // https://en.wikipedia.org/wiki/Sunrise_equation
     var equation = "-tan(" + latitude + "*2*pi/360) * tan(" + declination + "*2*pi/360)";
     equation = "acos(min(1, max(-1, " + equation + ")))";
+
+    return equation;
+}
+
+function draw_total_daylight(latitude) {
+    var equation = sunrise_eqn(latitude);
     equation = "24*(" + equation + ")/pi";
 
     draw_equation(equation, '#total-daylight', YEAR_RANGE, DAY_RANGE, {x: 'day', y: 'hours', title: 'total daylight'});
+}
+
+function draw_sunrise(latitude) {
+    var equation = sunrise_eqn(latitude);
+    var sunrise = "12 - 12*(" + equation + ")/pi";
+    var sunset  = "12 + 12*(" + equation + ")/pi";
+
+    draw_equation([sunrise, sunset], '#sunrise', YEAR_RANGE, DAY_RANGE, {x: 'day', y: 'hours', title: 'sunrise'});
 }
 
 function total_daylight(latitude, day) {
@@ -110,6 +124,7 @@ function draw() {
     latitude = get_latitude();
     draw_max_altitude(latitude);
     draw_total_daylight(latitude);
+    draw_sunrise(latitude);
 
     draw_day();
 }
@@ -121,6 +136,11 @@ function draw_day() {
 
 function start() {
     document.getElementById('form-lat').onsubmit = function (event) {
+        event.preventDefault();
+        draw();
+    };
+
+    document.getElementById('form-lon').onsubmit = function (event) {
         event.preventDefault();
         draw();
     };
