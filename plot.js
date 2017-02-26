@@ -22,9 +22,30 @@ function get_date() {
 
 function draw_equation(equation, target, xdomain, ydomain, labels)
 {
+    var data = [];
+
     if (typeof(labels) === "undefined") {
         console.log("no labels");
         labels = {};
+    }
+
+    if (typeof(equation) === "string") {
+        data = [{
+                fn: equation,
+                sampler: 'builtIn',
+                graphType: 'polyline'
+        }];
+    } else if (typeof(equation) === "object") {
+        for (i = 0; i < equation.length; i++) {
+            data[i] = {
+                fn: equation[i],
+                sampler: 'builtIn',
+                graphType: 'polyline'
+            };
+        }
+    } else {
+        console.log("no equation to plot");
+        return;
     }
 
     try {
@@ -35,11 +56,7 @@ function draw_equation(equation, target, xdomain, ydomain, labels)
             title:  labels.title,
             xDomain: xdomain,
             yDomain: ydomain,
-            data: [{
-                fn: equation,
-                sampler: 'builtIn',
-                graphType: 'polyline'
-            }]
+            data: data,
         });
     } catch (err) {
         console.log(err);
