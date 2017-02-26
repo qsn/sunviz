@@ -23,6 +23,23 @@
   <input type="submit" value="Draw" />
   <input type="range" id="longitude-range" min="-180" max="180">
 </form>
+<form id="form-tz">
+  <label for="tz1">Timezone on Jan 1st:</label>
+  <input type="text" id="tz1" value="1"/>
+  <br>
+  <label for="dst1">Date of first timezone switch:</label>
+  <input type="text" id="dst1" value="03-26"/>
+  <input type="range" id="dst1-range" min="1" max="365">
+  <br>
+  <label for="tz2">Other timezone:</label>
+  <input type="text" id="tz2" value="2"/>
+  <br>
+  <label for="dst2">Date of second timezone switch:</label>
+  <input type="text" id="dst2" value="10-29"/>
+  <input type="range" id="dst2-range" min="1" max="365">
+  <br>
+  <input type="submit" value="Draw" />
+</form>
 
 <div id="max-altitude" class="plot"></div>
 <div id="total-daylight" class="plot"></div>
@@ -30,7 +47,7 @@
 
 <form id="form-date">
   <label for="date">Day:</label>
-  <input type="range" id="date" min="0" max="365">
+  <input type="range" id="date" min="1" max="365">
   <input type="text" id="date-value" disabled>
 </form>
 

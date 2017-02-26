@@ -3,10 +3,49 @@ var equinox = 31 + 28 + 21; // march 21
 var latitude;
 var longitude;
 var day;
+var dst1, dst2, tz1, tz2;
 
 YEAR_RANGE = [0, 365];
 DAY_RANGE  = [0, 24];
 ANGLE_RANGE = [0, 90];
+
+function format_date(d) {
+    var months = [31,28,31,30,31,30,31,31,30,31,30,31];
+    for (i = 0; i < months.length; i++) {
+        if (d <= months[i]) {
+            i++;
+            break;
+        }
+        d -= months[i];
+    }
+
+    var result = "";
+    if (i < 10) {
+        result += "0";
+    }
+    result += i;
+    result += "-";
+    if (d < 10) {
+        result += "0";
+    }
+    result += d;
+
+    return result;
+}
+
+function parse_date(s) {
+    var months = [31,28,31,30,31,30,31,31,30,31,30,31];
+    var arr = s.split('-');
+    var m = parseInt(arr[0]);
+    var d = parseInt(arr[1]);
+
+    var date = 0;
+    m--;
+    for (i = 0; i < m; i++) {
+        date += months[i];
+    }
+    return date + d;
+}
 
 function get_latitude() {
     var l = parseFloat(document.getElementById('latitude').value);
@@ -22,8 +61,27 @@ function get_longitude() {
 
 function get_date() {
     var d = parseInt(document.getElementById('date').value);
-    document.getElementById('date-value').value = d;
+    document.getElementById('date-value').value = format_date(d);
     return d;
+}
+
+function parse_tz(s) {
+    var arr = s.split(':');
+    var h = parseInt(arr[0]);
+    var m = arr.length == 1 ? 0 : parseInt(arr[1]);
+    return h + m/60;
+}
+
+function set_tz() {
+    dst1 = parse_date(document.getElementById('dst1').value);
+    document.getElementById('dst1-range').value = dst1;
+
+    tz1 = parse_tz(document.getElementById('tz1').value);
+
+    dst2 = parse_date(document.getElementById('dst2').value);
+    document.getElementById('dst2-range').value = dst2;
+
+    tz2 = parse_tz(document.getElementById('tz2').value);
 }
 
 function draw_equation(equation, target, xdomain, ydomain, labels)
@@ -97,12 +155,17 @@ function mod24(equation) {
     return "(" + equation + ") % 24";
 }
 
+function day_tz(day, equation) {
+    var tz = "(" + day + " < " + dst1 + " or " + day + " > " + dst2 + ") ? " + tz1 + " : " + tz2;
+    return "(" + tz + ") + " + equation;
+}
+
 function draw_sunrise(latitude, longitude) {
     var equation = sunrise_eqn(latitude);
     var sunrise = "- 12*(" + equation + ")/pi + " + solar_noon(longitude);
     var sunset  = "+ 12*(" + equation + ")/pi + " + solar_noon(longitude);
 
-    draw_equation([mod24(sunrise), mod24(sunset)], '#sunrise', YEAR_RANGE, DAY_RANGE, {x: 'day', y: 'hours', title: 'sunrise'});
+    draw_equation([mod24(day_tz("x", sunrise)), mod24(day_tz("x", sunset))], '#sunrise', YEAR_RANGE, DAY_RANGE, {x: 'day', y: 'hours', title: 'sunrise'});
 }
 
 function total_daylight(latitude, day) {
@@ -128,7 +191,7 @@ function draw_day_altitude(latitude, longitude, day) {
         equation = "0";
     } else {
         alpha = max_altitude / (1 - math.cos((daylight/2)*2*math.PI/24));
-        equation = max_altitude + " - " + alpha + " * (1 - cos(2*pi/24 * (x-" + solar_noon(longitude) + ")))";
+        equation = max_altitude + " - " + alpha + " * (1 - cos(2*pi/24 * (x-" + day_tz(day, solar_noon(longitude)) + ")))";
         equation = "max(0, " + equation + ")";
     }
 
@@ -136,6 +199,7 @@ function draw_day_altitude(latitude, longitude, day) {
 }
 
 function draw() {
+    set_tz();
     latitude = get_latitude();
     longitude = get_longitude();
     draw_max_altitude(latitude);
@@ -161,6 +225,11 @@ function start() {
         draw();
     };
 
+    document.getElementById('form-tz').onsubmit = function (event) {
+        event.preventDefault();
+        draw();
+    };
+
     document.getElementById('latitude-range').oninput = function () {
         d = parseFloat(document.getElementById('latitude-range').value);
         document.getElementById('latitude').value = d;
@@ -174,6 +243,20 @@ function start() {
         longitude = d;
         draw_sunrise(latitude, longitude);
         draw_day();
+    };
+
+    document.getElementById('dst1-range').oninput = function () {
+        d = parseFloat(document.getElementById('dst1-range').value);
+        document.getElementById('dst1').value = format_date(d);
+        dst1 = d;
+        draw();
+    };
+
+    document.getElementById('dst2-range').oninput = function () {
+        d = parseFloat(document.getElementById('dst2-range').value);
+        document.getElementById('dst2').value = format_date(d);
+        dst2 = d;
+        draw();
     };
 
     document.getElementById('date').oninput = draw_day;
