@@ -1,7 +1,7 @@
 var tilt = 23.4392811;
 var equinox = 31 + 28 + 21; // march 21
-var solar_noon = 12; // actually varies by longitude/timezone
 var latitude;
+var longitude;
 var day;
 
 YEAR_RANGE = [0, 365];
@@ -11,6 +11,12 @@ ANGLE_RANGE = [0, 90];
 function get_latitude() {
     var l = parseFloat(document.getElementById('latitude').value);
     document.getElementById('latitude-range').value = l;
+    return l;
+}
+
+function get_longitude() {
+    var l = parseFloat(document.getElementById('longitude').value);
+    document.getElementById('longitude-range').value = l;
     return l;
 }
 
@@ -87,12 +93,16 @@ function draw_total_daylight(latitude) {
     draw_equation(equation, '#total-daylight', YEAR_RANGE, DAY_RANGE, {x: 'day', y: 'hours', title: 'total daylight'});
 }
 
-function draw_sunrise(latitude) {
-    var equation = sunrise_eqn(latitude);
-    var sunrise = "12 - 12*(" + equation + ")/pi";
-    var sunset  = "12 + 12*(" + equation + ")/pi";
+function mod24(equation) {
+    return "(" + equation + ") % 24";
+}
 
-    draw_equation([sunrise, sunset], '#sunrise', YEAR_RANGE, DAY_RANGE, {x: 'day', y: 'hours', title: 'sunrise'});
+function draw_sunrise(latitude, longitude) {
+    var equation = sunrise_eqn(latitude);
+    var sunrise = "- 12*(" + equation + ")/pi + " + solar_noon(longitude);
+    var sunset  = "+ 12*(" + equation + ")/pi + " + solar_noon(longitude);
+
+    draw_equation([mod24(sunrise), mod24(sunset)], '#sunrise', YEAR_RANGE, DAY_RANGE, {x: 'day', y: 'hours', title: 'sunrise'});
 }
 
 function total_daylight(latitude, day) {
@@ -104,7 +114,12 @@ function total_daylight(latitude, day) {
     return 24*(math.acos(sunrise_eq))/math.PI;
 }
 
-function draw_day_altitude(latitude, day) {
+// should also depend on timezone
+function solar_noon(longitude) {
+    return 12 - longitude * 24 / 360;
+}
+
+function draw_day_altitude(latitude, longitude, day) {
     var max_altitude = math.max(0,90-math.abs(latitude - tilt *math.sin(2*math.PI*(day - equinox)/365)));
     var daylight = total_daylight(latitude, day);
     var equation;
@@ -113,7 +128,7 @@ function draw_day_altitude(latitude, day) {
         equation = "0";
     } else {
         alpha = max_altitude / (1 - math.cos((daylight/2)*2*math.PI/24));
-        equation = max_altitude + " - " + alpha + " * (1 - cos(2*pi/24 * (x-" + solar_noon + ")))";
+        equation = max_altitude + " - " + alpha + " * (1 - cos(2*pi/24 * (x-" + solar_noon(longitude) + ")))";
         equation = "max(0, " + equation + ")";
     }
 
@@ -122,16 +137,17 @@ function draw_day_altitude(latitude, day) {
 
 function draw() {
     latitude = get_latitude();
+    longitude = get_longitude();
     draw_max_altitude(latitude);
     draw_total_daylight(latitude);
-    draw_sunrise(latitude);
+    draw_sunrise(latitude, longitude);
 
     draw_day();
 }
 
 function draw_day() {
     day = get_date();
-    draw_day_altitude(latitude, day);
+    draw_day_altitude(latitude, longitude, day);
 }
 
 function start() {
@@ -150,6 +166,14 @@ function start() {
         document.getElementById('latitude').value = d;
         latitude = d;
         draw();
+    };
+
+    document.getElementById('longitude-range').oninput = function () {
+        d = parseFloat(document.getElementById('longitude-range').value);
+        document.getElementById('longitude').value = d;
+        longitude = d;
+        draw_sunrise(latitude, longitude);
+        draw_day();
     };
 
     document.getElementById('date').oninput = draw_day;
